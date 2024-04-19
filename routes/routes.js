@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
 });
 
 // Get GPT Response
-app.post('/webhook', [validateRequest.validate], (req, res) => { 
+app.post('/webhook', (req, res) => { 
     resourceController.fetchAndForwardCommitData(req, res);
 });
 
