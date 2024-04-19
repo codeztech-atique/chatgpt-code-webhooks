@@ -29,3 +29,4 @@ Utilizes the GitHub API to fetch detailed commit information, including the numb
 
 
 # API Endpoint URL
+https://dz7c1y8ewf.execute-api.us-west-1.amazonaws.com/production/api

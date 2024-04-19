@@ -9,7 +9,7 @@ provider:
  memorySize: 512
  timeout: 300
  stage: production
- role: arn:aws:iam::532633343628:role/gpt-code-review
+ role: arn:aws:iam::485947658225:role/fetchforward_webhooks
  region: us-west-1 # AWS region
 
 functions:
