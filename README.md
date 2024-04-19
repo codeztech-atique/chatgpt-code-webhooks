@@ -1,6 +1,6 @@
 # Run the application
-npm install
-npm start
+- **npm install**
+- **npm start**
 
 # Code-Webhooks-Bot Part 1 API Description
 Fetch and Forward commit data. This API endpoint will receive webhook calls from GitHub whenever there is a push to the development branch. It will extract the commit ID and calculate the number of lines of code added.
