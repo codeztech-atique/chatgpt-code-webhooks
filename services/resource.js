@@ -6,6 +6,9 @@ exports.analyzeCommitChanges = (body) => {
         try {
             const { after: commitId, ref, repository } = body;
             const repoName = repository.full_name;
+
+            console.log("Repo name:", repoName, commitId);
+            console.log("References:", ref);
     
             // Check if the push was to the development branch
             if (ref === 'refs/heads/development') {
