@@ -4,7 +4,7 @@ const axios = require('axios');
 const callGPTForReview = (commitId, repoName, totalLinesAdded, filesChanged, committerUserId) => {
    return new Promise((resolve, reject) => {
         // Asynchronously send the data to another API gateway endpoint
-        const codeReviewEndpoint = 'https://7hz4z79x7i.execute-api.us-west-1.amazonaws.com/production/api/code-review';
+        const codeReviewEndpoint = process.env.CODE_REVIEW_ENDPOINT;
         const postData = {
             commitId,
             repoName,
