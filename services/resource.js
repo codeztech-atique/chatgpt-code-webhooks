@@ -1,6 +1,29 @@
 require('dotenv').config();
 const axios = require('axios');
 
+const callGPTForReview = (commitId, repoName, totalLinesAdded, filesChanged) => {
+   return new Promise((resolve, reject) => {
+        // Asynchronously send the data to another API gateway endpoint
+        const codeReviewEndpoint = 'https://7hz4z79x7i.execute-api.us-west-1.amazonaws.com/production/api/code-review';
+        const postData = {
+            commitId,
+            repoName,
+            totalLinesAdded,
+            filesChanged
+        };
+
+        axios.post(codeReviewEndpoint, postData, {
+            headers: { 'Content-Type': 'application/json' }
+        }).then(response => {
+            console.log('Data sent to code review API:', response.data);
+            resolve('Webhook received and processed for development branch; data sent to code-review API.');
+        }).catch(err => {
+            console.error('Error sending data to code review API:', err);
+            reject('Failed to send data to code-review API.');
+        });
+   })
+}
+
 exports.analyzeCommitChanges = (body) => {
     return new Promise(async(resolve, reject) => {
         try {
@@ -27,26 +50,9 @@ exports.analyzeCommitChanges = (body) => {
                 console.log(`Total lines added: ${totalLinesAdded}`);
 
                 resolve('Webhook received and processed for development branch; data sent to code-review API');
-
-                // Asynchronously send the data to another API gateway endpoint
-                const codeReviewEndpoint = 'https://7hz4z79x7i.execute-api.us-west-1.amazonaws.com/production/api/code-review';
-                const postData = {
-                    commitId,
-                    repoName,
-                    totalLinesAdded,
-                    filesChanged
-                };
-
-                axios.post(codeReviewEndpoint, postData, {
-                    headers: { 'Content-Type': 'application/json' }
-                }).then(response => {
-                    console.log('Data sent to code review API:', response.data);
-                    // resolve('Webhook received and processed for development branch; data sent to code-review API.');
-                }).catch(err => {
-                    console.error('Error sending data to code review API:', err);
-                    // reject('Failed to send data to code-review API.');
-                });
-
+                
+                await callGPTForReview(commitId, repoName, totalLinesAdded, filesChanged);
+                
 
             } else {
                 // Not the development branch, ignore or log if needed
