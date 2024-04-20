@@ -24,42 +24,51 @@ const callGPTForReview = (commitId, repoName, totalLinesAdded, filesChanged) => 
    })
 }
 
+// Helper function to fetch the commit data including the author
+const fetchCommitData = async (repoName, commitId) => {
+    const commitDataResponse = await axios.get(`https://api.github.com/repos/${repoName}/commits/${commitId}`, {
+        headers: { 'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` }
+    });
+    return commitDataResponse.data;
+};
+  
 exports.analyzeCommitChanges = (body) => {
     return new Promise(async(resolve, reject) => {
         try {
             const { after: commitId, ref, repository } = body;
             const repoName = repository.full_name;
 
-            console.log("Repo name:", repoName, commitId);
+            console.log("Repo name:", repoName, "Commit ID:", commitId);
             console.log("References:", ref);
     
             // Check if the push was to the development branch
             if (ref === 'refs/heads/develop') {
-                // Fetch commit data from GitHub API
-                const commitData = await axios.get(`https://api.github.com/repos/${repoName}/commits/${commitId}`, {
-                    headers: { 'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` }
-                });
+                // Fetch commit data including the author's details
+                const commitData = await fetchCommitData(repoName, commitId);
     
-                const filesChanged = commitData.data.files;
+                const filesChanged = commitData.files;
                 let totalLinesAdded = 0;
+                let committerUserId = commitData.committer?.login; // Get the committer's user ID
     
                 filesChanged.forEach(file => {
                     totalLinesAdded += file.additions;
                 });
     
                 console.log(`Total lines added: ${totalLinesAdded}`);
-
+                console.log(`Committer User ID: ${committerUserId}`);
+    
+                // Include the committer's user ID in the review process
+                await callGPTForReview(commitId, repoName, totalLinesAdded, filesChanged, committerUserId);
+                
                 resolve('Webhook received and processed for development branch; data sent to code-review API');
                 
-                await callGPTForReview(commitId, repoName, totalLinesAdded, filesChanged);
-                
-
             } else {
                 // Not the development branch, ignore or log if needed
-                resolve('Push not on development branch, webhook ignored')
+                resolve('Push not on development branch, webhook ignored');
             }
         } catch(err) {
-            reject('Something went wrong - '+err);
+            console.error('Something went wrong:', err.message);
+            reject(err);
         }
-    })   
+    });
 }
