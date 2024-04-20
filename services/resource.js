@@ -25,15 +25,35 @@ exports.analyzeCommitChanges = (body) => {
                 });
     
                 console.log(`Total lines added: ${totalLinesAdded}`);
-                
-                // Optionally trigger further actions here
-                resolve('Webhook received and processed for development branch')
+
+                resolve('Webhook received and processed for development branch; data sent to code-review API');
+
+                // Asynchronously send the data to another API gateway endpoint
+                const codeReviewEndpoint = 'https://7hz4z79x7i.execute-api.us-west-1.amazonaws.com/production/api/code-review';
+                const postData = {
+                    commitId,
+                    repoName,
+                    totalLinesAdded,
+                    filesChanged
+                };
+
+                axios.post(codeReviewEndpoint, postData, {
+                    headers: { 'Content-Type': 'application/json' }
+                }).then(response => {
+                    console.log('Data sent to code review API:', response.data);
+                    // resolve('Webhook received and processed for development branch; data sent to code-review API.');
+                }).catch(err => {
+                    console.error('Error sending data to code review API:', err);
+                    // reject('Failed to send data to code-review API.');
+                });
+
+
             } else {
                 // Not the development branch, ignore or log if needed
-                reject('Push not on development branch, webhook ignored')
+                resolve('Push not on development branch, webhook ignored')
             }
         } catch(err) {
-    
+            reject('Something went wrong - '+err);
         }
     })   
 }
