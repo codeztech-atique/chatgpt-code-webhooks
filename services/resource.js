@@ -11,7 +11,7 @@ exports.analyzeCommitChanges = (body) => {
             console.log("References:", ref);
     
             // Check if the push was to the development branch
-            if (ref === 'refs/heads/development') {
+            if (ref === 'refs/heads/develop') {
                 // Fetch commit data from GitHub API
                 const commitData = await axios.get(`https://api.github.com/repos/${repoName}/commits/${commitId}`, {
                     headers: { 'Authorization': `Bearer ${process.env.GITHUB_TOKEN}` }
