@@ -33,43 +33,35 @@ const fetchCommitData = async (repoName, commitId) => {
     return commitDataResponse.data;
 };
   
-exports.analyzeCommitChanges = (body) => {
-    return new Promise(async(resolve, reject) => {
-        try {
-            const { after: commitId, ref, repository } = body;
-            const repoName = repository.full_name;
+exports.analyzeCommitChanges = async (body) => {
+    try {
+        const { after: commitId, ref, repository } = body;
+        const repoName = repository.full_name;
 
-            console.log("Repo name:", repoName, "Commit ID:", commitId);
-            console.log("References:", ref);
-    
-            // Check if the push was to the development branch
-            if (ref === 'refs/heads/develop') {
-                // Fetch commit data including the author's details
-                const commitData = await fetchCommitData(repoName, commitId);
-    
-                const filesChanged = commitData.files;
-                let totalLinesAdded = 0;
-                let committerUserId = commitData.committer?.login; // Get the committer's user ID
-    
-                filesChanged.forEach(file => {
-                    totalLinesAdded += file.additions;
-                });
-    
-                console.log(`Total lines added: ${totalLinesAdded}`);
-                console.log(`Committer User ID: ${committerUserId}`);
-    
-                // Include the committer's user ID in the review process
-                await callGPTForReview(commitId, repoName, totalLinesAdded, filesChanged, committerUserId);
-                
-                resolve('Webhook received and processed for development branch; data sent to code-review API');
-                
-            } else {
-                // Not the development branch, ignore or log if needed
-                resolve('Push not on development branch, webhook ignored');
-            }
-        } catch(err) {
-            console.error('Something went wrong:', err.message);
-            reject(err);
+        console.log("Repo name:", repoName, "Commit ID:", commitId);
+        console.log("References:", ref);
+
+        // Check if the push was to the development branch
+        if (ref === 'refs/heads/develop') {
+            const commitData = await fetchCommitData(repoName, commitId);
+            const filesChanged = commitData.files;
+            let totalLinesAdded = 0;
+            let committerUserId = commitData.committer?.login; // Get the committer's user ID
+
+            filesChanged.forEach(file => {
+                totalLinesAdded += file.additions;
+            });
+
+            console.log(`Total lines added: ${totalLinesAdded}`);
+            console.log(`Committer User ID: ${committerUserId}`);
+
+            await callGPTForReview(commitId, repoName, totalLinesAdded, filesChanged, committerUserId);
+            return 'Webhook received and processed for development branch; data sent to code-review API';
+        } else {
+            return 'Push not on development branch, webhook ignored';
         }
-    });
-}
+    } catch(err) {
+        console.error('Something went wrong:', err);
+        throw new Error(err);
+    }
+};
