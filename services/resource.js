@@ -9,7 +9,7 @@ AWS.config.update({
 
 const sqs = new AWS.SQS({apiVersion: '2012-11-05'});
 
-const callGPTForReview =  (commitId, repoName, totalLinesAdded, filesChanged, committerUserId) => {
+const sendToSQS =  (commitId, repoName, totalLinesAdded, filesChanged, committerUserId) => {
     return new Promise((resolve, reject) => {
         const queueUrl = process.env.SQS_QUEUE_URL;
         const postData = JSON.stringify({
@@ -73,7 +73,7 @@ exports.analyzeCommitChanges = async (body) => {
             console.log(`Total lines added: ${totalLinesAdded}`);
             console.log(`Committer User ID: ${committerUserId}`);
 
-            await callGPTForReview(lastCommitId, repoName, totalLinesAdded, filesChanged, committerUserId);
+            await sendToSQS(lastCommitId, repoName, totalLinesAdded, filesChanged, committerUserId);
             return 'Webhook received and processed for development branch; data sent to code-review API';
         } else {
             return 'Push not on development branch, webhook ignored';
