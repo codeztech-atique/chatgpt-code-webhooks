@@ -1,9 +1,8 @@
 require('dotenv').config();
 const axios = require('axios');
 
-const callGPTForReview = (commitId, repoName, totalLinesAdded, filesChanged, committerUserId) => {
-   return new Promise((resolve, reject) => {
-        // Asynchronously send the data to another API gateway endpoint
+const callGPTForReview =  (commitId, repoName, totalLinesAdded, filesChanged, committerUserId) => {
+    return new Promise(async(resolve, reject) => {
         const codeReviewEndpoint = process.env.CODE_REVIEW_ENDPOINT;
         const postData = {
             commitId,
@@ -13,16 +12,18 @@ const callGPTForReview = (commitId, repoName, totalLinesAdded, filesChanged, com
             committerUserId
         };
 
-        axios.post(codeReviewEndpoint, postData, {
+        console.log("Sending to code review API:", postData);
+
+        await axios.post(codeReviewEndpoint, postData, {
             headers: { 'Content-Type': 'application/json' }
         }).then(response => {
             console.log('Data sent to code review API:', response.data);
             resolve('Webhook received and processed for development branch; data sent to code-review API.');
         }).catch(err => {
             console.error('Error sending data to code review API:', err);
-            reject('Failed to send data to code-review API.');
+            reject('Failed to send data to code-review API. Error: ' + err.message);
         });
-   })
+    });
 }
 
 // Helper function to fetch the commit data including the author
@@ -35,18 +36,22 @@ const fetchCommitData = async (repoName, commitId) => {
   
 exports.analyzeCommitChanges = async (body) => {
     try {
-        const { after: commitId, ref, repository } = body;
-        const repoName = repository.full_name;
+        const repoName = body.repository.full_name;
+        const ref = body.ref;
+        console.log("Repo name:", repoName, "References:", ref);
 
-        console.log("Repo name:", repoName, "Commit ID:", commitId);
-        console.log("References:", ref);
-
-        // Check if the push was to the development branch
         if (ref === 'refs/heads/develop') {
-            const commitData = await fetchCommitData(repoName, commitId);
+            const lastCommitId = body.after; // This should be the ID of the last commit in the push
+            console.log("Commit ID:", lastCommitId);
+
+            if (!lastCommitId) {
+                throw new Error('No commit ID found in the webhook payload');
+            }
+
+            const commitData = await fetchCommitData(repoName, lastCommitId);
             const filesChanged = commitData.files;
             let totalLinesAdded = 0;
-            let committerUserId = commitData.committer?.login; // Get the committer's user ID
+            let committerUserId = commitData.committer?.login;
 
             filesChanged.forEach(file => {
                 totalLinesAdded += file.additions;
@@ -55,13 +60,13 @@ exports.analyzeCommitChanges = async (body) => {
             console.log(`Total lines added: ${totalLinesAdded}`);
             console.log(`Committer User ID: ${committerUserId}`);
 
-            await callGPTForReview(commitId, repoName, totalLinesAdded, filesChanged, committerUserId);
+            await callGPTForReview(lastCommitId, repoName, totalLinesAdded, filesChanged, committerUserId);
             return 'Webhook received and processed for development branch; data sent to code-review API';
         } else {
             return 'Push not on development branch, webhook ignored';
         }
-    } catch(err) {
+    } catch (err) {
         console.error('Something went wrong:', err);
-        throw new Error(err);
+        throw new Error(err.message);
     }
 };
