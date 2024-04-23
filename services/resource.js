@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const AWS = require('aws-sdk');
+const axios = require('axios');
 
 AWS.config.update({
     region: process.env.REGION, // replace with your region
