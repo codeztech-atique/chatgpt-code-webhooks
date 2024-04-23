@@ -2,26 +2,31 @@ require('dotenv').config();
 const axios = require('axios');
 
 const callGPTForReview =  (commitId, repoName, totalLinesAdded, filesChanged, committerUserId) => {
-    return new Promise(async(resolve, reject) => {
-        const codeReviewEndpoint = process.env.CODE_REVIEW_ENDPOINT;
-        const postData = {
+    return new Promise((resolve, reject) => {
+        const queueUrl = process.env.SQS_QUEUE_URL;
+        const postData = JSON.stringify({
             commitId,
             repoName,
             totalLinesAdded,
             filesChanged,
             committerUserId
+        });
+
+        console.log("Sending to SQS queue:", postData);
+
+        const params = {
+            MessageBody: postData,
+            QueueUrl: queueUrl
         };
 
-        console.log("Sending to code review API:", postData);
-
-        await axios.post(codeReviewEndpoint, postData, {
-            headers: { 'Content-Type': 'application/json' }
-        }).then(response => {
-            console.log('Data sent to code review API:', response.data);
-            resolve('Webhook received and processed for development branch; data sent to code-review API.');
-        }).catch(err => {
-            console.error('Error sending data to code review API:', err);
-            reject('Failed to send data to code-review API. Error: ' + err.message);
+        sqs.sendMessage(params, function(err, data) {
+            if (err) {
+                console.error('Error sending data to SQS:', err);
+                reject('Failed to send data to SQS. Error: ' + err.message);
+            } else {
+                console.log('Data sent to SQS:', data.MessageId);
+                resolve('Webhook received and processed for development branch; data sent to SQS.');
+            }
         });
     });
 }
