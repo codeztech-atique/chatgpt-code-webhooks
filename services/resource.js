@@ -1,5 +1,12 @@
 require('dotenv').config();
-const axios = require('axios');
+
+const AWS = require('aws-sdk');
+
+AWS.config.update({
+    region: process.env.REGION, // replace with your region
+});
+
+const sqs = new AWS.SQS({apiVersion: '2012-11-05'});
 
 const callGPTForReview =  (commitId, repoName, totalLinesAdded, filesChanged, committerUserId) => {
     return new Promise((resolve, reject) => {
